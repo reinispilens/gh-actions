@@ -2,10 +2,10 @@ name: 'Telegram Notify'
 description: 'Send a formatted Telegram message for repo events (merge / failure / pr). Single source of truth for all reinispilens repos.'
 inputs:
   token:
-    description: 'Telegram bot token (pass ${{ secrets.TELEGRAM_BOT_TOKEN }})'
+    description: 'Telegram bot token (pass secrets.TELEGRAM_BOT_TOKEN)'
     required: true
   chat_id:
-    description: 'Telegram chat id (pass ${{ secrets.TELEGRAM_CHAT_ID }})'
+    description: 'Telegram chat id (pass secrets.TELEGRAM_CHAT_ID)'
     required: true
   kind:
     description: 'merge | failure | pr'
@@ -17,7 +17,7 @@ inputs:
     description: 'Link to the commit / PR / run'
     required: true
   repo:
-    description: 'owner/repo (pass ${{ github.repository }})'
+    description: 'owner/repo (pass github.repository)'
     required: true
   actor:
     description: 'Who triggered it'
