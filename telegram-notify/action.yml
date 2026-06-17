@@ -1,0 +1,53 @@
+name: 'Telegram Notify'
+description: 'Send a formatted Telegram message for repo events (merge / failure / pr). Single source of truth for all reinispilens repos.'
+inputs:
+  token:
+    description: 'Telegram bot token (pass ${{ secrets.TELEGRAM_BOT_TOKEN }})'
+    required: true
+  chat_id:
+    description: 'Telegram chat id (pass ${{ secrets.TELEGRAM_CHAT_ID }})'
+    required: true
+  kind:
+    description: 'merge | failure | pr'
+    required: true
+  title:
+    description: 'Detail line — commit subject / PR title / failed workflow name'
+    required: true
+  url:
+    description: 'Link to the commit / PR / run'
+    required: true
+  repo:
+    description: 'owner/repo (pass ${{ github.repository }})'
+    required: true
+  actor:
+    description: 'Who triggered it'
+    required: false
+    default: ''
+runs:
+  using: 'composite'
+  steps:
+    - shell: bash
+      env:
+        TOKEN: ${{ inputs.token }}
+        CHAT: ${{ inputs.chat_id }}
+        KIND: ${{ inputs.kind }}
+        TITLE: ${{ inputs.title }}
+        URL: ${{ inputs.url }}
+        REPO: ${{ inputs.repo }}
+        ACTOR: ${{ inputs.actor }}
+      run: |
+        set -euo pipefail
+        [ -n "${TOKEN:-}" ] && [ -n "${CHAT:-}" ] || { echo "TELEGRAM_* secrets not set — skipping"; exit 0; }
+        case "$KIND" in
+          merge)   ICON="✅"; VERB="merged" ;;
+          failure) ICON="🔴"; VERB="FAILED" ;;
+          pr)      ICON="📥"; VERB="new PR" ;;
+          *)       ICON="🔔"; VERB="$KIND" ;;
+        esac
+        if [ -n "${ACTOR:-}" ]; then BY=$(printf '\n_by %s_' "$ACTOR"); else BY=""; fi
+        TEXT=$(printf '%s *%s* — %s\n%s%s\n%s' "$ICON" "$REPO" "$VERB" "$TITLE" "$BY" "$URL")
+        curl -sS --fail -X POST "https://api.telegram.org/bot${TOKEN}/sendMessage" \
+          --data-urlencode "chat_id=${CHAT}" \
+          --data-urlencode "text=${TEXT}" \
+          --data-urlencode "parse_mode=Markdown" >/dev/null
+        echo "Telegram notified ($KIND)."
